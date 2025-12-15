@@ -1,0 +1,8 @@
+{
+  "name": "hotel-project",
+  "version": "1.0.0",
+  "description": "PHP project deployed on Vercel.",
+  "scripts": {
+    "start": "echo 'Starting deployment...'"
+  }
+}
