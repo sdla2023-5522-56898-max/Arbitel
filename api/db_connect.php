@@ -1,18 +1,20 @@
 <?php
-// Database connection details
-$db_host = 'localhost';
-$db_user = 'root';  // Change to your database username
-$db_pass = '';      // Change to your database password
-$db_name = 'arbitel_db';
+// Get the connection details from Vercel Environment Variables
+$servername = getenv('DB_HOST');
+$username = getenv('DB_USER');
+$password = getenv('DB_PASSWORD');
+$dbname = getenv('DB_NAME');
+$port = getenv('DB_PORT');
+
+// Create connection string
+$conn_string = "host=" . $servername . " port=" . $port . " dbname=" . $dbname . " user=" . $username . " password=" . $password;
 
 // Create connection
-$conn = new mysqli($db_host, $db_user, $db_pass, $db_name);
+$conn = pg_connect($conn_string);
 
 // Check connection
-if ($conn->connect_error) {
-    die("Connection failed: " . $conn->connect_error);
+if (!$conn) {
+    error_log("Connection failed: " . pg_last_error());
+    die("Connection failed: " . pg_last_error());
 }
-
-// Set charset to utf8mb4
-$conn->set_charset("utf8mb4");
 ?>

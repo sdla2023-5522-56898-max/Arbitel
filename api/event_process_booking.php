@@ -27,8 +27,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Validate required fields
-    $required_fields = ['venueName', 'basePrice', 'startDate', 'endDate', 'numAttendees',
-        'startTime', 'endTime', 'contactPerson', 'email', 'phone', 'totalCharge'];
+    $required_fields = [
+        'venueName',
+        'basePrice',
+        'startDate',
+        'endDate',
+        'numAttendees',
+        'startTime',
+        'endTime',
+        'contactPerson',
+        'email',
+        'phone',
+        'totalCharge'
+    ];
 
     foreach ($required_fields as $field) {
         if (empty($data[$field])) {
@@ -71,22 +82,39 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 special_instructions, base_venue_price, num_days, 
                 catering_charge, service_charge, vat, total_charge
             ) VALUES (
-                ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-            )";
+                $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21
+            ) RETURNING booking_id";
 
-        $stmt = $conn->prepare($sql);
-        $stmt->bind_param(
-            "isssisssssssisididddd",
-            $user_id, $venue_name, $start_date, $end_date, $num_attendees,
-            $start_time, $end_time, $company_name, $event_group,
-            $contact_person, $email, $phone, $event_type, $catering_needed,
-            $special_instructions, $base_price, $num_days,
-            $catering_charge, $service_charge, $vat, $total_charge
+        $params = array(
+            $user_id,
+            $venue_name,
+            $start_date,
+            $end_date,
+            $num_attendees,
+            $start_time,
+            $end_time,
+            $company_name,
+            $event_group,
+            $contact_person,
+            $email,
+            $phone,
+            $event_type,
+            $catering_needed,
+            $special_instructions,
+            $base_price,
+            $num_days,
+            $catering_charge,
+            $service_charge,
+            $vat,
+            $total_charge
         );
 
+        $stmt = pg_query_params($conn, $sql, $params);
+
         // Execute the statement
-        if ($stmt->execute()) {
-            $booking_id = $conn->insert_id;
+        if ($stmt) {
+            $row = pg_fetch_assoc($stmt);
+            $booking_id = $row['booking_id'];
             header('Content-Type: application/json');
             echo json_encode([
                 'success' => true,
@@ -94,11 +122,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'booking_id' => $booking_id
             ]);
         } else {
-            throw new Exception("Error executing statement: " . $stmt->error);
+            throw new Exception("Error executing query: " . pg_last_error($conn));
         }
 
-        $stmt->close();
-        $conn->close();
+        pg_free_result($stmt);
+        pg_close($conn);
 
     } catch (Exception $e) {
         header('Content-Type: application/json');

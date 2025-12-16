@@ -2,17 +2,19 @@
 session_start();
 header('Content-Type: application/json');
 
-// Replace with your actual DB credentials
-$host = 'localhost';
-$db   = 'arbitel_db';
-$user = 'root';
-$pass = '';
+// Get connection details from Environment Variables
+$host = getenv('DB_HOST');
+$db = getenv('DB_NAME');
+$user = getenv('DB_USER');
+$pass = getenv('DB_PASSWORD');
+$port = getenv('DB_PORT');
 
 try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $pass);
+    $dsn = "pgsql:host=$host;port=$port;dbname=$db";
+    $pdo = new PDO($dsn, $user, $pass);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 } catch (PDOException $e) {
-    echo json_encode(['success' => false, 'error' => 'Database connection failed']);
+    echo json_encode(['success' => false, 'error' => 'Database connection failed: ' . $e->getMessage()]);
     exit;
 }
 

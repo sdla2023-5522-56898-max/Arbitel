@@ -12,22 +12,21 @@ require_once 'db_connection.php';
 // Check if this is a form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Get booking data from form
-    $customerName = mysqli_real_escape_string($conn, $_POST['customer_name']);
-    $email = mysqli_real_escape_string($conn, $_POST['email']);
-    $roomId = (int)$_POST['room_id'];
-    $checkInDate = mysqli_real_escape_string($conn, $_POST['check_in_date']);
-    $checkOutDate = mysqli_real_escape_string($conn, $_POST['check_out_date']);
-    $totalPrice = (float)$_POST['total_price'];
-    $specialInstructions = mysqli_real_escape_string($conn, $_POST['special_instructions'] ?? '');
+    $customerName = $_POST['customer_name'];
+    $email = $_POST['email'];
+    $roomId = (int) $_POST['room_id'];
+    $checkInDate = $_POST['check_in_date'];
+    $checkOutDate = $_POST['check_out_date'];
+    $totalPrice = (float) $_POST['total_price'];
+    $specialInstructions = $_POST['special_instructions'] ?? '';
     $reservationDate = date('Y-m-d'); // Current date
 
     // Insert booking into database
     $query = "INSERT INTO reservations (customer_name, email, room_id, check_in_date, check_out_date, 
               total_price, special_instructions, reservation_date, status) 
-              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')";
+              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'confirmed') RETURNING id";
 
-    $stmt = mysqli_prepare($conn, $query);
-    mysqli_stmt_bind_param($stmt, "ssisssss",
+    $params = array(
         $customerName,
         $email,
         $roomId,
@@ -38,23 +37,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $reservationDate
     );
 
-    $result = mysqli_stmt_execute($stmt);
+    $result = pg_query_params($conn, $query, $params);
 
     if ($result) {
         // Get the reservation ID
-        $reservationId = mysqli_insert_id($conn);
+        // Get the reservation ID
+        $row = pg_fetch_assoc($result);
+        $reservationId = $row['id'];
 
+        // Get room details
         // Get room details
         $roomQuery = "SELECT r.name as room_name, c.name as room_category 
                      FROM rooms r 
                      JOIN room_categoris c ON r.category_id = c.id 
-                     WHERE r.id = ?";
+                     WHERE r.id = $1";
 
-        $roomStmt = mysqli_prepare($conn, $roomQuery);
-        mysqli_stmt_bind_param($roomStmt, "i", $roomId);
-        mysqli_stmt_execute($roomStmt);
-        $roomResult = mysqli_stmt_get_result($roomStmt);
-        $roomData = mysqli_fetch_assoc($roomResult);
+        $roomResult = pg_query_params($conn, $roomQuery, array($roomId));
+        $roomData = pg_fetch_assoc($roomResult);
 
         // Store all email data in session for JavaScript to access
         $_SESSION['booking_email_data'] = [
@@ -75,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     } else {
         // Handle error
-        echo "Booking failed: " . mysqli_error($conn);
+        echo "Booking failed: " . pg_last_error($conn);
     }
 }
 ?>
